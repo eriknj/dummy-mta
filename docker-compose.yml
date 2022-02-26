@@ -1,0 +1,9 @@
+version: "3.9"
+services:
+  dummy-mta:
+    build: .
+    environment:
+      - DUMMY_MTA_PORT: 25
+    ports:
+      - 25:25
+      - 8080:8080

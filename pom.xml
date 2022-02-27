@@ -33,6 +33,11 @@
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.data</groupId>
+			<artifactId>spring-data-elasticsearch</artifactId>
+		</dependency>
+
 		<!-- https://mvnrepository.com/artifact/org.subethamail/subethasmtp -->
 		<dependency>
 			<groupId>org.subethamail</groupId>

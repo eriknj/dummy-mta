@@ -3,7 +3,14 @@ services:
   dummy-mta:
     build: .
     environment:
-      - DUMMY_MTA_PORT: 25
+      DUMMY_MTA_PORT: 25
+      DUMMY_MTA_ELASTICSEARCH_HOST: elasticsearch:9200
     ports:
       - 25:25
       - 8080:8080
+  elasticsearch:
+    image: elasticsearch:7.6.2
+    ports:
+      - 9200:9200
+    environment:
+      discovery.type: single-node

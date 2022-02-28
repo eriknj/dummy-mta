@@ -1,8 +1,10 @@
 package net.midgard.dummy.mta;
 
+import java.text.ParseException;
 import java.util.HashSet;
 import java.util.Set;
 import javax.inject.Inject;
+import javax.mail.MessagingException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,14 +26,15 @@ public class SearchEmailController {
     private Wiser wiser;
 
     @GetMapping("/email")
-    public Set<WiserMessage> searchEmails(@RequestParam String searchTerm) {
+    public Set<MailRecord> searchEmails(@RequestParam String searchTerm)
+            throws MessagingException, ParseException {
         log.trace("Entered method searchEmails");
         log.info(String.format("Searching for %s", searchTerm));
-        Set<WiserMessage> hits = new HashSet<>();
+        Set<MailRecord> hits = new HashSet<>();
         for (WiserMessage msg : wiser.getMessages()) {
             String msgStr = msg.toString();
             if (msgStr.contains(searchTerm)) {
-                hits.add(msg);
+                hits.add(new MailRecord(msg));
                 log.info(String.format("Search hit on %s", msgStr));
             }
         }

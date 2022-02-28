@@ -2,10 +2,12 @@ package net.midgard.dummy.mta.wisest;
 
 import java.io.InputStream;
 import java.io.IOException;
+import java.text.ParseException;
 import javax.inject.Inject;
 import javax.mail.MessagingException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import net.midgard.dummy.mta.MailRecord;
 import org.elasticsearch.action.DocWriteResponse.Result;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
@@ -32,11 +34,17 @@ public class Wisest extends Wiser {
         int messageIndex = this.messages.size() - 1;
         WiserMessage newMessage = this.messages.get(messageIndex);
         try {
-            String json = new ObjectMapper().writeValueAsString(newMessage.getMimeMessage());
+            MailRecord mr = new MailRecord(newMessage);
+            String json = new ObjectMapper().writeValueAsString(mr);
             IndexRequest request = new IndexRequest("dummy-mta");
             request.source(json, XContentType.JSON);
             IndexResponse response = client.index(request, RequestOptions.DEFAULT);
             log.info(String.format("Indexed: %s", String.valueOf(Result.CREATED.equals(response.getResult()))));
+
+        } catch (ParseException e) {
+            IOException ioe = new IOException("Could not parse date from WiserMessage#getData()");
+            ioe.initCause(e);
+            throw ioe;
 
         } catch (MessagingException e) {
             IOException ioe = new IOException("Could not produce MimeMessage from WiserMessage");

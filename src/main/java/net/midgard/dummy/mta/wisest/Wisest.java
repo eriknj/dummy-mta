@@ -2,56 +2,34 @@ package net.midgard.dummy.mta.wisest;
 
 import java.io.InputStream;
 import java.io.IOException;
-import java.text.ParseException;
-import javax.inject.Inject;
 import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import net.midgard.dummy.mta.MailRecord;
-import org.elasticsearch.action.DocWriteResponse.Result;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.xcontent.XContentType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.subethamail.smtp.TooMuchDataException;
+import net.midgard.dummy.mta.Address;
+import net.midgard.dummy.mta.AddressService;
+import net.midgard.dummy.mta.MessageService;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.subethamail.wiser.Wiser;
-import org.subethamail.wiser.WiserMessage;
 
 public class Wisest extends Wiser {
 
-    private final Logger log = LoggerFactory.getLogger(Wisest.class);
+    @Autowired
+    private AddressService addressService;
 
-    @Inject
-    private RestHighLevelClient client;
+    @Autowired
+    private MessageService messageService;
 
     @Override
-    public void deliver(String from, String recipient, InputStream data) throws TooMuchDataException, IOException {
-        log.trace("Entered method deliver");
-        super.deliver(from, recipient, data);
-        int messageIndex = this.messages.size() - 1;
-        WiserMessage newMessage = this.messages.get(messageIndex);
+    public void deliver(String from, String recipient, InputStream data) throws IOException {
+        Address fromAddress = addressService.upsert(from);
+        Address recipientAddress = addressService.upsert(recipient);
         try {
-            MailRecord mr = new MailRecord(newMessage);
-            String json = new ObjectMapper().writeValueAsString(mr);
-            IndexRequest request = new IndexRequest("dummy-mta");
-            request.source(json, XContentType.JSON);
-            IndexResponse response = client.index(request, RequestOptions.DEFAULT);
-            log.info(String.format("Indexed: %s", String.valueOf(Result.CREATED.equals(response.getResult()))));
-
-        } catch (ParseException e) {
-            IOException ioe = new IOException("Could not parse date from WiserMessage#getData()");
-            ioe.initCause(e);
-            throw ioe;
-
+            MimeMessage mime = new MimeMessage(getSession(), data);
+            messageService.createMessage(fromAddress, recipientAddress, mime);
         } catch (MessagingException e) {
-            IOException ioe = new IOException("Could not produce MimeMessage from WiserMessage");
-            ioe.initCause(e);
-            throw ioe;
+            throw new IOException(e);
         }
-        log.trace("About to leave method deliver");
     }
 
 }
